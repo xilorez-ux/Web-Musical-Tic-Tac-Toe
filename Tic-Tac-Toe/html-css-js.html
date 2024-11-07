@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe 3x3</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            text-align: center;
+            width: 280px;
+            transition: box-shadow 0.3s ease;
+        }
+
+            #game-container:hover {
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            background-color: #fafafa;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+        }
+
+            .cell:hover {
+                background-color: #e3f2fd;
+                transform: scale(1.05);
+            }
+
+            .cell.disabled {
+                cursor: not-allowed;
+                background-color: #dcdcdc;
+            }
+
+            .cell.winner {
+                background-color: #28a745;
+                color: white;
+                animation: highlight 0.4s ease-in-out forwards;
+            }
+
+        @keyframes highlight {
+            from {
+                background-color: #28a745;
+            }
+
+            to {
+                background-color: #155724;
+            }
+        }
+
+        #status {
+            margin: 15px 0;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            button:active {
+                transform: translateY(2px);
+            }
+
+        input {
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+
+        #scoreboard {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pseudo-form">
+        <h2>Entrez les pseudos</h2>
+        <input type="text" id="pseudo-input1" placeholder="Pseudo Joueur 1 (X)">
+        <input type="text" id="pseudo-input2" placeholder="Pseudo Joueur 2 (O)">
+        <button id="start-game-button">Commencer à jouer</button>
+    </div>
+
+    <div id="game-container" style="display: none;">
+        <h1>Tic-Tac-Toe</h1>
+        <p id="player-name"></p>
+        <div id="scoreboard">
+            <span id="score-x">X: 0</span> | <span id="score-o">O: 0</span>
+        </div>
+        <div id="game-board"></div>
+        <div id="status">Tour du joueur X</div>
+        <button id="restart-button">Redémarrer</button>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const statusDisplay = document.getElementById('status');
+        const restartButton = document.getElementById('restart-button');
+        const startGameButton = document.getElementById('start-game-button');
+        const pseudoInput1 = document.getElementById('pseudo-input1');
+        const pseudoInput2 = document.getElementById('pseudo-input2');
+        const playerNameDisplay = document.getElementById('player-name');
+        const pseudoForm = document.getElementById('pseudo-form');
+        const gameContainer = document.getElementById('game-container');
+        const scoreXDisplay = document.getElementById('score-x');
+        const scoreODisplay = document.getElementById('score-o');
+
+        let board = Array(9).fill('');
+        let isGameActive = true;
+        let currentPlayer = 'X';
+        let playerX = '';
+        let playerO = '';
+        let scoreX = 0;
+        let scoreO = 0;
+
+        startGameButton.addEventListener('click', () => {
+            playerX = pseudoInput1.value.trim();
+            playerO = pseudoInput2.value.trim();
+
+            if (playerX && playerO) {
+                pseudoForm.style.display = 'none';
+                gameContainer.style.display = 'block';
+                playerNameDisplay.textContent = `${playerX} vs ${playerO}`;
+                createBoard();
+            } else {
+                alert('Veuillez entrer les pseudos pour les deux joueurs.');
+            }
+        });
+
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            board.forEach((_, index) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = index;
+                cell.addEventListener('click', handleCellClick);
+                gameBoard.appendChild(cell);
+            });
+        }
+
+        function handleCellClick(event) {
+            const cellIndex = event.target.dataset.index;
+
+            if (board[cellIndex] !== '' || !isGameActive) {
+                return;
+            }
+
+            board[cellIndex] = currentPlayer;
+            event.target.textContent = currentPlayer;
+            event.target.classList.add('disabled');
+
+            checkResult();
+        }
+
+        function checkResult() {
+            const winConditions = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            for (let condition of winConditions) {
+                const [a, b, c] = condition;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    highlightWinningCells(condition);
+                    isGameActive = false;
+                    if (board[a] === 'X') {
+                        scoreX++;
+                        scoreXDisplay.textContent = `X: ${scoreX}`;
+                        statusDisplay.textContent = `${playerX} a gagné!`;
+                    } else {
+                        scoreO++;
+                        scoreODisplay.textContent = `O: ${scoreO}`;
+                        statusDisplay.textContent = `${playerO} a gagné!`;
+                    }
+                    return;
+                }
+            }
+
+            if (!board.includes('')) {
+                statusDisplay.textContent = "Match nul!";
+                isGameActive = false;
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                statusDisplay.textContent = `Tour du joueur ${currentPlayer}`;
+            }
+        }
+
+        function highlightWinningCells(condition) {
+            condition.forEach(index => {
+                const cell = gameBoard.children[index];
+                cell.classList.add('winner');
+            });
+        }
+
+        restartButton.addEventListener('click', resetGame);
+
+        function resetGame() {
+            board.fill('');
+            isGameActive = true;
+            currentPlayer = 'X';
+            statusDisplay.textContent = `Tour du joueur ${currentPlayer}`;
+            createBoard();
+        }
+    </script>
+</body>
+</html>
